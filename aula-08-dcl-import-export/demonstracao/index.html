@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demonstração — DCL + Import/Export — Aetheria Online</title>
+<style>
+  :root{--bg:#1e1e1e;--panel:#252526;--accent:#c1272d;--text:#e8e8e8;--console-bg:#0c0c0c;--ok:#3ff23f;--err:#ff6b6b;--btn:#3a3a3a;}
+  *{box-sizing:border-box;}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:24px;}
+  h1{font-size:20px;border-left:6px solid var(--accent);padding-left:12px;margin-bottom:4px;}
+  .subtitle{color:#aaa;margin:0 0 16px 12px;font-size:13px;}
+  .group{font-size:11px;letter-spacing:.08em;color:#888;margin:14px 0 6px;text-transform:uppercase;}
+  .buttons{display:flex;flex-wrap:wrap;gap:8px;}
+  button{background:var(--btn);color:var(--text);border:1px solid #555;border-radius:6px;padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;transition:.15s;}
+  button:hover{background:#4a4a4a;}
+  button.active{background:var(--accent);border-color:var(--accent);}
+  #reset{background:#333;border-color:var(--accent);color:#ff8d92;}
+  #reset:hover{background:var(--accent);color:#fff;}
+  .layout{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:16px;}
+  @media(max-width:850px){.layout{grid-template-columns:1fr;}}
+  .panel{background:var(--panel);border-radius:8px;padding:16px;border:1px solid #333;}
+  .panel h2{font-size:14px;margin-top:0;color:#f0a0a0;}
+  pre.console{background:var(--console-bg);color:var(--ok);padding:14px;border-radius:6px;font-family:Consolas,'Courier New',monospace;font-size:13px;line-height:1.5;min-height:300px;white-space:pre-wrap;word-break:break-word;margin:0;}
+  .cmd{color:#fff;} .e{color:var(--err);} .c{color:#888;}
+  .explain{font-size:14px;line-height:1.65;color:#ddd;} .explain b{color:#f0a0a0;}
+  .explain code{background:#111;padding:1px 5px;border-radius:3px;color:#ffd479;}
+  .warn{margin-top:10px;padding:8px 10px;border-left:4px solid var(--accent);background:#2e2020;border-radius:4px;font-size:13px;}
+  .blink{animation:blink 1s step-end infinite;} @keyframes blink{50%{opacity:0;}}
+  footer{margin-top:24px;font-size:11px;color:#777;text-align:center;}
+</style>
+</head>
+<body>
+<h1>🔐 DCL + Import/Export — Aetheria Online</h1>
+<p class="subtitle">Um botão por conceito. Clique e veja o comando, o resultado e a explicação. (Console simulado com as respostas reais do MySQL 8.0.)</p>
+
+<div class="group">DCL — quem pode o quê</div>
+<div class="buttons" id="btns-dcl"></div>
+<div class="group">Import / Export — levar o banco para outro lugar</div>
+<div class="buttons" id="btns-ie"></div>
+<div style="margin-top:12px"><button id="reset">↺ Limpar console</button></div>
+
+<div class="layout">
+  <div class="panel"><h2>💻 Console MySQL (simulado)</h2>
+    <pre class="console" id="console"><span class="c">-- Clique em um conceito acima --</span><span class="blink">▌</span></pre></div>
+  <div class="panel"><h2>💡 O que está acontecendo</h2>
+    <div class="explain" id="explain">Selecione um botão para ver a explicação aqui.</div></div>
+</div>
+<footer>SENAI Ítalo Bologna · Banco de Dados · Fio condutor: Aetheria Online (Pixel Forge Studios) · banco aetheria_online</footer>
+
+<script>
+const OK = "Query OK, 0 rows affected";
+const DCL = [
+ {l:"1️⃣ CREATE USER", sql:"CREATE USER 'analista_junior'@'localhost'\n  IDENTIFIED BY 'Analista@2026';", out:OK+" (0.01 sec)",
+  ex:"<b>CREATE USER</b> cria o <b>crachá</b>. O nome é <code>usuario@host</code>: <code>localhost</code> = só do próprio computador. <b>Crachá novo não abre nenhuma porta</b>: sem GRANT ele não faz nada.",
+  w:"Esquecer o '@localhost' cria outro usuário (@'%')."},
+ {l:"2️⃣ GRANT", sql:"GRANT SELECT ON aetheria_online.*\n  TO 'analista_junior'@'localhost';", out:OK+" (0.01 sec)",
+  ex:"<b>GRANT</b> libera permissões. <code>aetheria_online.*</code> = todas as tabelas do banco. O nível pode ser <code>*.*</code> (tudo), <code>banco.*</code>, <code>banco.tabela</code> ou só colunas. <b>Sempre o nível mais estreito que resolve.</b>"},
+ {l:"3️⃣ SHOW GRANTS", sql:"SHOW GRANTS FOR 'analista_junior'@'localhost';",
+  out:"+---------------------------------------------------------------------+\n| Grants for analista_junior@localhost                                |\n+---------------------------------------------------------------------+\n| GRANT USAGE ON *.* TO `analista_junior`@`localhost`                 |\n| GRANT SELECT ON `aetheria_online`.* TO `analista_junior`@`localhost`|\n+---------------------------------------------------------------------+",
+  ex:"<b>SHOW GRANTS</b> mostra o que o usuário pode. <code>USAGE</code> = só pode conectar (nenhum poder). Use sempre para <b>conferir</b> depois de um GRANT ou REVOKE."},
+ {l:"4️⃣ Testar (outra conexão)", sql:"-- conectado como analista_junior:\nSELECT * FROM aetheria_online.jogador;\nINSERT INTO aetheria_online.jogador (nome, email)\n  VALUES ('X','x@pf.com');",
+  out:"2 rows in set (0.00 sec)\n[e]ERROR 1142 (42000): INSERT command denied to user\n'analista_junior'@'localhost' for table 'jogador'[/e]",
+  ex:"Teste sempre com <b>outra conexão</b> (no Workbench: botão <b>+</b> ao lado de MySQL Connections). O SELECT passa; o INSERT é <b>negado (erro 1142)</b>. Esse contraste é a prova de que o GRANT funcionou."},
+ {l:"5️⃣ GRANT em colunas", sql:"GRANT SELECT (id_jogador, nome)\n  ON aetheria_online.jogador TO 'estagio'@'localhost';\n-- conectado como estagio:\nSELECT id_jogador, nome FROM aetheria_online.jogador;\nSELECT email FROM aetheria_online.jogador;",
+  out:"2 rows in set (0.00 sec)\n[e]ERROR 1143 (42000): SELECT command denied to user\n'estagio'@'localhost' for column 'email' in table 'jogador'[/e]",
+  ex:"Dá para liberar só <b>algumas colunas</b>. O estagiário vê id e nome, mas o <b>e-mail do jogador fica protegido</b> (erro 1143)."},
+ {l:"6️⃣ REVOKE", sql:"GRANT INSERT, UPDATE ON aetheria_online.jogador\n  TO 'analista_junior'@'localhost';\nREVOKE INSERT, UPDATE ON aetheria_online.jogador\n  FROM 'analista_junior'@'localhost';",
+  out:OK+" (0.01 sec)\n"+OK+" (0.01 sec)",
+  ex:"<b>REVOKE</b> tira a permissão. Atenção: <b>GRANT usa TO, REVOKE usa FROM</b>.",
+  w:"Só revoga no MESMO nível em que deu. Um GRANT em aetheria_online.* não se desfaz com REVOKE em aetheria_online.jogador (erro 1147)."},
+ {l:"7️⃣ Os 3 perfis", sql:"-- admin: tudo e pode repassar\nGRANT ALL PRIVILEGES ON aetheria_online.* TO 'admin_pf'@'localhost' WITH GRANT OPTION;\n-- dev: lê, grava e muda a estrutura (sem DROP)\nGRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX\n  ON aetheria_online.* TO 'dev_pf'@'localhost';\n-- analista júnior: só lê\nGRANT SELECT ON aetheria_online.* TO 'analista_junior'@'localhost';",
+  out:OK+"\n"+OK+"\n"+OK,
+  ex:"<b>Menor privilégio</b>: cada um recebe só o que precisa. <b>admin_pf</b> faz tudo, <b>dev_pf</b> mexe nos dados e na estrutura mas não apaga tabelas, <b>analista_junior</b> só lê. Ninguém usa <code>root</code> no dia a dia."},
+ {l:"8️⃣ ALTER / DROP USER", sql:"ALTER USER 'dev_pf'@'localhost' IDENTIFIED BY 'NovaSenha@2026';\nDROP USER IF EXISTS 'temp_pf'@'localhost';",
+  out:OK+"\n"+OK,
+  ex:"<b>ALTER USER</b> troca a senha. <b>DROP USER</b> apaga o crachá. <b>FLUSH PRIVILEGES</b> só é preciso se você editar as tabelas mysql.* na mão; GRANT/REVOKE/CREATE USER já valem na hora."},
+ {l:"9️⃣ Erros comuns", sql:"-- 1045 senha errada\n-- 1044 sem acesso ao banco (faltou GRANT)\n-- 1142 comando negado (faltou o privilégio)\n-- 1396 usuário já existe (use IF NOT EXISTS)\n-- 1819 senha fraca para a política do servidor",
+  out:"[e]ERROR 1045 (28000): Access denied for user 'analista_junior'@'localhost' (using password: YES)[/e]",
+  ex:"Quase todo erro de DCL é <b>falta de GRANT</b>, senha errada ou <b>esquecer o '@localhost'</b>."}
+];
+const IE = [
+ {l:"🔟 mysqldump (exportar)", sql:"# no terminal (cmd), fora do Workbench:\nmysqldump -u root -p aetheria_online > aetheria_tabelas.sql\nmysqldump -u root -p --databases aetheria_online > aetheria_backup.sql",
+  out:"Enter password: ********\n[arquivo aetheria_tabelas.sql criado com CREATE TABLE + INSERT]",
+  ex:"<b>mysqldump</b> gera um arquivo <code>.sql</code> com os comandos para recriar tudo. Opções úteis: <code>--no-data</code> (só estrutura), <code>--single-transaction</code> (sem travar), <code>--routines</code>. O <b>Workbench</b> faz o mesmo em <b>Server → Data Export</b>.",
+  w:"Dump com --databases traz CREATE DATABASE + USE e SOBRESCREVE o banco original ao importar. Para fazer uma CÓPIA, use o dump SEM --databases."},
+ {l:"1️⃣1️⃣ Importar o dump", sql:"mysql -u root -p -e \"CREATE DATABASE aetheria_copia\"\nmysql -u root -p aetheria_copia < aetheria_tabelas.sql\n\nUSE aetheria_copia;\nSHOW TABLES;",
+  out:"+----------------------------+\n| Tables_in_aetheria_copia   |\n+----------------------------+\n| arqueiro                   |\n| conta_premium              |\n| denuncia                   |\n| ...  (14 tabelas)          |\n+----------------------------+",
+  ex:"Crie o banco vazio primeiro, depois importe o dump <b>sem --databases</b>. Valide: <code>SHOW TABLES</code> e <code>COUNT(*)</code> iguais ao original. No Workbench: <b>Server → Data Import</b>.",
+  w:"source arquivo.sql só funciona no terminal mysql, não na aba SQL do Workbench."},
+ {l:"1️⃣2️⃣ CSV (OUTFILE / LOAD DATA)", sql:"SHOW VARIABLES LIKE 'secure_file_priv';\n\nSELECT * FROM jogador\n  INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/jogadores.csv'\n  FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\\n';\n\nLOAD DATA INFILE '.../jogadores.csv'\n  INTO TABLE jogador_importado\n  FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\\n';",
+  out:"Query OK, 2 rows affected\nQuery OK, 2 rows affected\nRecords: 2  Deleted: 0  Skipped: 0  Warnings: 0",
+  ex:"CSV é uma <b>tabela só</b>, em texto. O MySQL só lê/grava na pasta de <code>secure_file_priv</code> (senão erro 1290). O arquivo <b>não pode existir</b> antes (erro 1086) e precisa do privilégio <b>FILE</b>. Mais fácil no Workbench: botão direito na tabela → Table Data Export/Import Wizard.",
+  w:"A tabela de destino do LOAD DATA já precisa existir, com as mesmas colunas."},
+ {l:"1️⃣3️⃣ Backup full × incremental", sql:"Domingo:  backup FULL (mysqldump)\nSegunda a sábado: backup INCREMENTAL (binary log)\n\nRestaurar = último FULL + incrementais em ordem",
+  out:"Seg  Ter  Qua  Qui  Sex  Sab  Dom\n inc  inc  inc  inc  inc  inc  FULL",
+  ex:"<b>Full</b> copia tudo (mais lento e pesado, restauração simples). <b>Incremental</b> copia só o que mudou desde o último backup (rápido e leve, restaura full + incrementais em ordem).",
+  w:"Backup que nunca foi restaurado não é backup. Teste!"}
+];
+
+const con=document.getElementById('console'), exp=document.getElementById('explain');
+let timer=null;
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function fmt(o){return esc(o).replace(/\[e\]([\s\S]*?)\[\/e\]/g,'<span class="e">$1</span>');}
+function show(item, btn){
+  document.querySelectorAll('button.active').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); clearInterval(timer);
+  const sql=item.sql; let i=0; con.innerHTML='';
+  exp.innerHTML=item.ex+(item.w?'<div class="warn">⚠ '+item.w+'</div>':'');
+  timer=setInterval(()=>{
+    i+=3; const typed=esc(sql.slice(0,i));
+    con.innerHTML='<span class="cmd">mysql&gt; '+typed.replace(/\n/g,'\n    ')+'</span><span class="blink">▌</span>';
+    if(i>=sql.length){clearInterval(timer);
+      con.innerHTML='<span class="cmd">mysql&gt; '+esc(sql).replace(/\n/g,'\n    ')+'</span>'+(item.out?'\n\n'+fmt(item.out):'');}
+  },18);
+}
+function build(list,id){const box=document.getElementById(id);
+  list.forEach(it=>{const b=document.createElement('button');b.textContent=it.l;b.onclick=()=>show(it,b);box.appendChild(b);});}
+build(DCL,'btns-dcl'); build(IE,'btns-ie');
+document.getElementById('reset').onclick=()=>{clearInterval(timer);
+  document.querySelectorAll('button.active').forEach(b=>b.classList.remove('active'));
+  con.innerHTML='<span class="c">-- Clique em um conceito acima --</span><span class="blink">▌</span>';
+  exp.textContent='Selecione um botão para ver a explicação aqui.';};
+</script>
+</body>
+</html>

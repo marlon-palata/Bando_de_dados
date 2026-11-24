@@ -1,0 +1,100 @@
+=====================================================================
+ IMPORT / EXPORT — LIVE CODING (Windows PowerShell + Workbench)
+ Banco: aetheria_online_2a   ·   MySQL Server 26.10   ·   usuário: root
+ Ordem: 1º linha de comando (PowerShell) · 2º modo fácil (Workbench)
+=====================================================================
+
+REGRAS DO POWERSHELL (as correções que já apanhamos)
+ 1. Caminho entre aspas precisa de  &  na frente (senão: erro "Token -u").
+ 2. -u e -p sempre MINÚSCULOS. O usuário é o mesmo do Workbench (root).
+ 3. Exportar com  --result-file=  e NUNCA com  >
+    (o  >  do PowerShell grava em UTF-16 e o MySQL não lê depois).
+ 4. O  <  não funciona no PowerShell. Para importar, use o  source.
+ 5. source só dentro do mysql> (no -e "source ..." deu ERRO 1064).
+ 6. No source, barra NORMAL:  C:/dumps/arquivo.sql
+ 7. A variável $mysql some quando abre outra janela: rode o PASSO 0 de novo.
+
+---------------------------------------------------------------------
+ PASSO 0 — Preparar (toda vez que abrir o PowerShell)
+---------------------------------------------------------------------
+mkdir C:\dumps
+$mysql = "C:\Program Files\MySQL\MySQL Server 26.10\bin"
+& "$mysql\mysql" --version
+# Mostrou a versão? Então o caminho está certo.
+
+---------------------------------------------------------------------
+ PARTE 1 — EXPORT pelo PowerShell
+---------------------------------------------------------------------
+# 1.1 Backup COMPLETO (estrutura + dados)
+& "$mysql\mysqldump" -u root -p --single-transaction --routines aetheria_online_2a --result-file=C:\dumps\aetheria_completo.sql
+
+# 1.2 Só a ESTRUTURA (tabelas vazias)
+& "$mysql\mysqldump" -u root -p --no-data aetheria_online_2a --result-file=C:\dumps\aetheria_estrutura.sql
+
+# 1.3 Conferir se os arquivos saíram
+Get-ChildItem C:\dumps
+Get-Content C:\dumps\aetheria_completo.sql -TotalCount 25
+
+# O que cada opção faz:
+#  -u root -p            usuário root; a senha é pedida depois (não aparece na tela)
+#  --single-transaction  foto do banco sem travar quem está usando
+#  --routines            leva junto procedures e functions
+#  --no-data             só CREATE TABLE, sem INSERT
+#  --result-file=        grava o arquivo do jeito certo (UTF-8)
+#
+# ⚠ NÃO usamos --databases aqui: com ele o arquivo traz
+#   CREATE DATABASE + USE aetheria_online_2a, e o import cai em cima
+#   do banco ORIGINAL. Sem ele, a gente escolhe o banco de destino.
+
+---------------------------------------------------------------------
+ PARTE 2 — IMPORT pelo PowerShell (num banco CÓPIA)
+---------------------------------------------------------------------
+# 2.1 Entrar no MySQL (fica no prompt  mysql> )
+& "$mysql\mysql" -u root -p
+
+-- 2.2 Já dentro do  mysql>  :
+CREATE DATABASE IF NOT EXISTS aetheria_copia;
+USE aetheria_copia;
+source C:/dumps/aetheria_completo.sql
+
+-- 2.3 Validar
+SHOW TABLES FROM aetheria_copia;
+SELECT COUNT(*) FROM aetheria_online_2a.jogador;
+SELECT COUNT(*) FROM aetheria_copia.jogador;
+-- Os dois COUNT iguais = backup funcionou.
+
+exit
+
+---------------------------------------------------------------------
+ PARTE 3 — EXPORT no Workbench (modo fácil)
+---------------------------------------------------------------------
+ 1. Menu  Server  →  Data Export
+ 2. Marque o schema  aetheria_online_2a  (todas as tabelas)
+ 3. "Dump Structure and Data"
+ 4. Marque  "Export to Self-Contained File"  →  C:\dumps\aetheria_workbench.sql
+ 5. DEIXE DESMARCADO  "Include Create Schema"  (mesmo motivo do --databases)
+ 6. Start Export  →  esperar "Export Completed"
+
+---------------------------------------------------------------------
+ PARTE 4 — IMPORT no Workbench (modo fácil)
+---------------------------------------------------------------------
+ 1. Menu  Server  →  Data Import
+ 2. "Import from Self-Contained File"  →  C:\dumps\aetheria_workbench.sql
+ 3. Default Target Schema  →  New...  →  aetheria_copia_wb  →  OK
+ 4. "Dump Structure and Data"  →  Start Import
+ 5. SCHEMAS  →  Refresh  →  abrir aetheria_copia_wb
+ 6. Validar no editor:
+      SHOW TABLES FROM aetheria_copia_wb;
+      SELECT COUNT(*) FROM aetheria_copia_wb.jogador;
+
+---------------------------------------------------------------------
+ ERROS QUE APARECERAM E A CORREÇÃO
+---------------------------------------------------------------------
+ Erro                                        Correção
+ Unexpected token '-u' / '-U'                faltou o  &  antes do caminho
+ '\mysqldump' não reconhecido (caminho vazio) $mysql sumiu → rodar o PASSO 0
+ ERROR 1064 com -e "source ..."              entrar no mysql> e rodar source lá
+ "O operador '<' é reservado"                PowerShell não aceita <  → usar source
+ ERROR 1045 Access denied                    senha do root errada
+ ERROR 1049 Unknown database                 criar o banco antes (CREATE DATABASE)
+ Import com caracteres estranhos / erro      arquivo feito com  >  → refazer com --result-file

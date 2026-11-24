@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Demonstração — DDL Física + DCL — Aetheria Online</title>
+<style>
+  :root{
+    --bg:#1e1e1e; --panel:#252526; --accent:#c1272d; --text:#e8e8e8;
+    --console-bg:#0c0c0c; --console-text:#3ff23f; --btn:#3a3a3a; --btn-active:#c1272d;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:24px;}
+  h1{font-size:20px;border-left:6px solid var(--accent);padding-left:12px;margin-bottom:4px;}
+  .subtitle{color:#aaa;margin:0 0 20px 12px;font-size:13px;}
+  .buttons{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  button{
+    background:var(--btn);color:var(--text);border:1px solid #555;border-radius:6px;
+    padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;transition:.15s;
+  }
+  button:hover{background:#4a4a4a;}
+  button.active{background:var(--btn-active);border-color:var(--btn-active);}
+  #reset{background:#333;border-color:#c1272d;color:#c1272d;margin-left:auto;}
+  #reset:hover{background:#c1272d;color:#fff;}
+  .layout{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;}
+  @media(max-width:800px){.layout{grid-template-columns:1fr;}}
+  .panel{background:var(--panel);border-radius:8px;padding:16px;border:1px solid #333;}
+  .panel h2{font-size:14px;margin-top:0;color:#f0a0a0;}
+  pre.console{
+    background:var(--console-bg);color:var(--console-text);padding:14px;border-radius:6px;
+    font-family:Consolas,'Courier New',monospace;font-size:13px;line-height:1.5;min-height:260px;
+    white-space:pre-wrap;word-break:break-word;margin:0;
+  }
+  .explain{font-size:13.5px;line-height:1.6;color:#ddd;}
+  .explain b{color:#f0a0a0;}
+  .blink{opacity:1;animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0;}}
+  footer{margin-top:24px;font-size:11px;color:#777;text-align:center;}
+</style>
+</head>
+<body>
+
+<h1>🗄 DDL Física + DCL — Aetheria Online</h1>
+<p class="subtitle">Um botão por conceito. Clique e veja o comando + o que acontece no banco.</p>
+
+<div class="buttons" id="btns"></div>
+
+<div class="layout">
+  <div class="panel">
+    <h2>💻 Console MySQL (simulado)</h2>
+    <pre class="console" id="console">-- Clique em um conceito acima para começar --<span class="blink">▌</span></pre>
+  </div>
+  <div class="panel">
+    <h2>💡 O que está acontecendo</h2>
+    <div class="explain" id="explain">Selecione um botão para ver a explicação aqui.</div>
+  </div>
+</div>
+
+<footer>SENAI Ítalo Bologna · Banco de Dados · Fio condutor: Aetheria Online (Pixel Forge Studios)</footer>
+
+<script>
+const steps = [
+  {
+    id: "database",
+    label: "1️⃣ CREATE DATABASE",
+    sql: `CREATE DATABASE IF NOT EXISTS aetheria_online;
+USE aetheria_online;`,
+    output: `Query OK, 1 row affected (0.02 sec)
+Database changed`,
+    explain: "<b>CREATE DATABASE</b> cria o \"armário\" onde todas as tabelas do jogo vão morar. " +
+      "<b>USE</b> diz ao MySQL: \"a partir de agora, todo comando é dentro desse banco\". " +
+      "Sem o USE, você precisaria escrever <code>aetheria_online.tabela</code> toda vez."
+  },
+  {
+    id: "table_pk",
+    label: "2️⃣ CREATE TABLE + PK",
+    sql: `CREATE TABLE jogador (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    nome VARCHAR(80) NOT NULL,
+    email VARCHAR(120) NOT NULL UNIQUE
+);`,
+    output: `Query OK, 0 rows affected (0.04 sec)
+
+mysql> DESCRIBE jogador;
++-------+--------------+------+-----+---------+----------------+
+| Field | Type         | Null | Key | Default | Extra          |
++-------+--------------+------+-----+---------+----------------+
+| id    | int          | NO   | PRI | NULL    | auto_increment |
+| nome  | varchar(80)  | NO   |     | NULL    |                |
+| email | varchar(120) | NO   | UNI | NULL    |                |
++-------+--------------+------+-----+---------+----------------+`,
+    explain: "<b>PRIMARY KEY AUTO_INCREMENT</b> faz o MySQL gerar o id sozinho (1, 2, 3...). " +
+      "Nenhum jogador pode ter o mesmo id — é a identidade única da linha. " +
+      "<b>UNIQUE</b> no email impede dois jogadores cadastrados com o mesmo email."
+  },
+  {
+    id: "table_fk",
+    label: "3️⃣ CREATE TABLE + FK",
+    sql: `CREATE TABLE personagem (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    nome VARCHAR(80) NOT NULL,
+    jogador_id INT NOT NULL,
+    FOREIGN KEY (jogador_id) REFERENCES jogador(id)
+);
+
+-- tentando inserir com jogador_id inexistente:
+INSERT INTO personagem (nome, jogador_id) VALUES ('Kaeldor', 999);`,
+    output: `Query OK, 0 rows affected (0.03 sec)
+
+ERROR 1452 (23000): Cannot add or update a child row:
+a foreign key constraint fails
+("aetheria_online"."personagem", CONSTRAINT "personagem_ibfk_1"
+FOREIGN KEY ("jogador_id") REFERENCES "jogador" ("id"))`,
+    explain: "A <b>FOREIGN KEY</b> é o \"segurança da porta\": o MySQL RECUSA inserir um personagem apontando " +
+      "para um jogador_id que não existe. Isso é <b>integridade referencial</b> — impossível ter dado " +
+      "\"órfão\" no banco."
+  },
+  {
+    id: "alter",
+    label: "4️⃣ ALTER TABLE",
+    sql: `ALTER TABLE personagem ADD COLUMN xp INT DEFAULT 0;
+
+-- personagem já tinha 3 linhas cadastradas antes disso`,
+    output: `Query OK, 3 rows affected (0.05 sec)
+Records: 3  Duplicates: 0  Warnings: 0
+
+-- as 3 linhas antigas continuam existindo,
+-- agora todas com xp = 0`,
+    explain: "<b>ALTER TABLE ... ADD COLUMN</b> muda a estrutura de uma tabela que JÁ TEM DADOS, sem apagar " +
+      "nada. As linhas existentes recebem o valor DEFAULT na coluna nova. É assim que o jogo evolui sem " +
+      "resetar o banco."
+  },
+  {
+    id: "dcl",
+    label: "5️⃣ DCL — GRANT / REVOKE",
+    sql: `CREATE USER 'analista_junior'@'localhost' IDENTIFIED BY 'senha123';
+GRANT SELECT, INSERT ON aetheria_online.* TO 'analista_junior'@'localhost';
+
+-- depois, tirando uma permissão:
+REVOKE INSERT ON aetheria_online.* FROM 'analista_junior'@'localhost';`,
+    output: `Query OK, 0 rows affected (0.02 sec)
+Query OK, 0 rows affected (0.01 sec)
+Query OK, 0 rows affected (0.01 sec)
+
+-- analista_junior agora só pode fazer SELECT
+-- (consultar), não pode mais INSERT`,
+    explain: "<b>DCL</b> controla QUEM pode fazer O QUE. <b>GRANT</b> dá permissão, <b>REVOKE</b> tira. " +
+      "Princípio do menor privilégio: cada usuário só recebe o poder que precisa pro seu trabalho — " +
+      "nunca mais que isso."
+  }
+];
+
+const btnsDiv = document.getElementById("btns");
+const consoleEl = document.getElementById("console");
+const explainEl = document.getElementById("explain");
+
+steps.forEach((step, idx) => {
+  const b = document.createElement("button");
+  b.textContent = step.label;
+  b.onclick = () => showStep(idx, b);
+  btnsDiv.appendChild(b);
+});
+
+const resetBtn = document.createElement("button");
+resetBtn.id = "reset";
+resetBtn.textContent = "↺ Resetar";
+resetBtn.onclick = resetAll;
+btnsDiv.appendChild(resetBtn);
+
+function showStep(idx, btnEl) {
+  document.querySelectorAll("#btns button").forEach(b => b.classList.remove("active"));
+  if (btnEl) btnEl.classList.add("active");
+  const step = steps[idx];
+  consoleEl.textContent = "mysql> " + step.sql + "\n\n" + step.output;
+  explainEl.innerHTML = step.explain;
+}
+
+function resetAll() {
+  document.querySelectorAll("#btns button").forEach(b => b.classList.remove("active"));
+  consoleEl.innerHTML = '-- Clique em um conceito acima para começar --<span class="blink">▌</span>';
+  explainEl.textContent = "Selecione um botão para ver a explicação aqui.";
+}
+</script>
+
+</body>
+</html>

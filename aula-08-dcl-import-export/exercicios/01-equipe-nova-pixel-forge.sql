@@ -1,0 +1,23 @@
+-- ============================================================
+-- DINÂMICA EM DUPLAS | Equipe nova na Pixel Forge
+-- Rode COMO ROOT. Complete os TODO e teste cada usuário
+-- em uma conexão nova do Workbench.
+-- ============================================================
+
+-- 1) lia_estagio  -> só SELECT em TODAS as tabelas do aetheria_online
+-- TODO: CREATE USER ... IDENTIFIED BY 'Lia@2026';
+-- TODO: GRANT ...
+
+-- 2) rui_suporte  -> SELECT e UPDATE só na tabela aetheria_online.jogador
+-- TODO: CREATE USER ...
+-- TODO: GRANT ...
+
+-- 3) vera_mercado -> SELECT só na tabela aetheria_online.item
+-- TODO: CREATE USER ...
+-- TODO: GRANT ...
+
+-- 4) Tire o UPDATE do rui_suporte
+-- TODO: REVOKE ...
+
+-- 5) Prove o resultado dos três
+-- TODO: SHOW GRANTS FOR ...

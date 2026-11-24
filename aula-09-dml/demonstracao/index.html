@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demonstração — DML — Aetheria Online</title>
+<style>
+  :root{--bg:#1e1e1e;--panel:#252526;--accent:#c1272d;--text:#e8e8e8;--console-bg:#0c0c0c;--ok:#3ff23f;--err:#ff6b6b;--btn:#3a3a3a;}
+  *{box-sizing:border-box;}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:24px;}
+  h1{font-size:20px;border-left:6px solid var(--accent);padding-left:12px;margin-bottom:4px;}
+  .subtitle{color:#aaa;margin:0 0 16px 12px;font-size:13px;}
+  .group{font-size:11px;letter-spacing:.08em;color:#888;margin:14px 0 6px;text-transform:uppercase;}
+  .buttons{display:flex;flex-wrap:wrap;gap:8px;}
+  button{background:var(--btn);color:var(--text);border:1px solid #555;border-radius:6px;padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;transition:.15s;}
+  button:hover{background:#4a4a4a;}
+  button.active{background:var(--accent);border-color:var(--accent);}
+  #reset{background:#333;border-color:var(--accent);color:#ff8d92;}
+  #reset:hover{background:var(--accent);color:#fff;}
+  .layout{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:16px;}
+  @media(max-width:850px){.layout{grid-template-columns:1fr;}}
+  .panel{background:var(--panel);border-radius:8px;padding:16px;border:1px solid #333;}
+  .panel h2{font-size:14px;margin-top:0;color:#f0a0a0;}
+  pre.console{background:var(--console-bg);color:var(--ok);padding:14px;border-radius:6px;font-family:Consolas,'Courier New',monospace;font-size:13px;line-height:1.5;min-height:300px;white-space:pre-wrap;word-break:break-word;margin:0;}
+  .cmd{color:#fff;} .e{color:var(--err);} .c{color:#888;}
+  .explain{font-size:14px;line-height:1.65;color:#ddd;} .explain b{color:#f0a0a0;}
+  .explain code{background:#111;padding:1px 5px;border-radius:3px;color:#ffd479;}
+  .warn{margin-top:10px;padding:8px 10px;border-left:4px solid var(--accent);background:#2e2020;border-radius:4px;font-size:13px;}
+  .blink{animation:blink 1s step-end infinite;} @keyframes blink{50%{opacity:0;}}
+  footer{margin-top:24px;font-size:11px;color:#777;text-align:center;}
+</style>
+</head>
+<body>
+<h1>🗃 DML — INSERT, UPDATE, DELETE e SELECT</h1>
+<p class="subtitle">Um botão por conceito. Clique e veja o comando, o resultado e a explicação. (Console simulado com as respostas reais do MySQL.)</p>
+
+<div class="group">Colocando e lendo dados</div>
+<div class="buttons" id="btns-dcl"></div>
+<div class="group">Alterando, apagando e desfazendo</div>
+<div class="buttons" id="btns-ie"></div>
+<div style="margin-top:12px"><button id="reset">↺ Limpar console</button></div>
+
+<div class="layout">
+  <div class="panel"><h2>💻 Console MySQL (simulado)</h2>
+    <pre class="console" id="console"><span class="c">-- Clique em um conceito acima --</span><span class="blink">▌</span></pre></div>
+  <div class="panel"><h2>💡 O que está acontecendo</h2>
+    <div class="explain" id="explain">Selecione um botão para ver a explicação aqui.</div></div>
+</div>
+<footer>SENAI Ítalo Bologna · Banco de Dados · Fio condutor: Aetheria Online (Pixel Forge Studios) · banco aetheria_online · 14 tabelas</footer>
+
+<script>
+const DCL = [
+ {l:"1️⃣ INSERT", sql:"INSERT INTO jogador (nome, email)\nVALUES ('Rafael Silva', 'rafael@pixelforge.com');", out:"Query OK, 1 row affected (0.01 sec)",
+  ex:"Diga <b>a tabela</b>, <b>as colunas</b> e <b>os valores</b>, nessa ordem. Texto entre aspas simples, número solto. O <code>id_jogador</code> não aparece: é <b>AUTO_INCREMENT</b>."},
+ {l:"2️⃣ INSERT de várias linhas", sql:"INSERT INTO jogador (nome, email) VALUES\n  ('Ayla Costa',  'ayla@pixelforge.com'),\n  ('Bruno Lima',  'bruno@pixelforge.com'),\n  ('Carla Souza', 'carla@pixelforge.com');", out:"Query OK, 3 rows affected (0.01 sec)\nRecords: 3  Duplicates: 0  Warnings: 0",
+  ex:"Um <code>VALUES</code>, vários parênteses separados por vírgula. Mais rápido que três comandos.",
+  w:"Se UMA linha der erro, NENHUMA entra."},
+ {l:"3️⃣ As travas barrando", sql:"INSERT INTO jogador (nome) VALUES ('Sem Email');\nINSERT INTO jogador (nome, email) VALUES ('Outro','rafael@pixelforge.com');",
+  out:"[e]ERROR 1364 (HY000): Field 'email' doesn't have a default value[/e]\n[e]ERROR 1062 (23000): Duplicate entry 'rafael@pixelforge.com' for key 'email'[/e]",
+  ex:"O que você declarou no <code>CREATE TABLE</code> trabalha agora: <b>1364</b> = faltou coluna <b>NOT NULL</b>; <b>1062</b> = valor repetido numa coluna <b>UNIQUE</b>. Erro aqui é proteção."},
+ {l:"4️⃣ CHECK e FOREIGN KEY", sql:"INSERT INTO personagem (nome, level, id_jogador) VALUES ('Bugado', 0, 1);\nINSERT INTO personagem (nome, level, id_jogador) VALUES ('Fantasma', 10, 999);",
+  out:"[e]ERROR 3819 (HY000): Check constraint 'personagem_chk_1' is violated.[/e]\n[e]ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails[/e]",
+  ex:"<b>CHECK</b> confere o valor (<code>level &gt; 0</code>). <b>FK</b> confere se o pai existe: não há jogador 999."},
+ {l:"5️⃣ Pai, filha e LAST_INSERT_ID", sql:"INSERT INTO guilda (nome, cidade) VALUES ('Legião de Ferro','Valdoria');\nINSERT INTO personagem (nome, level, id_jogador, id_guilda)\n  VALUES ('Kaeldor', 45, 1, 1);\nSELECT LAST_INSERT_ID();",
+  out:"Query OK, 1 row affected\nQuery OK, 1 row affected\n+------------------+\n| LAST_INSERT_ID() |\n+------------------+\n|                1 |\n+------------------+",
+  ex:"A filha só entra se o <b>pai já existe</b>. <code>LAST_INSERT_ID()</code> devolve o id que o AUTO_INCREMENT acabou de gerar — útil para inserir na subclasse (guerreiro, mago, arqueiro)."},
+ {l:"6️⃣ SELECT", sql:"SELECT nome, level FROM personagem;",
+  out:"+----------+-------+\n| nome     | level |\n+----------+-------+\n| Kaeldor  |    45 |\n| Sylvara  |    62 |\n| Zephyros |    23 |\n| Thorin   |    30 |\n| Lyria    |    12 |\n+----------+-------+\n5 rows in set (0.00 sec)",
+  ex:"<code>SELECT *</code> traz todas as colunas; listar as colunas traz só o que interessa. O SELECT <b>não altera nada</b>: é o comando mais seguro para testar."},
+ {l:"7️⃣ WHERE", sql:"SELECT nome, level FROM personagem WHERE level > 40;",
+  out:"+---------+-------+\n| nome    | level |\n+---------+-------+\n| Kaeldor |    45 |\n| Sylvara |    62 |\n+---------+-------+\n2 rows in set (0.00 sec)",
+  ex:"O <b>WHERE é o freio</b>. Operadores: <code>=</code> <code>&lt;&gt;</code> <code>&gt;</code> <code>&lt;</code>, <code>BETWEEN</code>, <code>IN</code>, <code>LIKE</code>, <code>IS NULL</code>, <code>AND</code>, <code>OR</code>.",
+  w:"Sem WHERE o comando vale para a tabela inteira."},
+ {l:"8️⃣ IS NULL", sql:"SELECT nome FROM personagem WHERE id_guilda = NULL;\nSELECT nome FROM personagem WHERE id_guilda IS NULL;",
+  out:"Empty set (0.00 sec)\n\n+----------+\n| nome     |\n+----------+\n| Zephyros |\n| Lyria    |\n+----------+\n2 rows in set (0.00 sec)",
+  ex:"NULL é <b>ausência de valor</b>: não se compara com <code>=</code>. O primeiro comando não dá erro, só devolve <b>zero linhas</b> — por isso engana tanta gente."},
+ {l:"9️⃣ ORDER BY + LIMIT", sql:"SELECT nome, level FROM personagem ORDER BY level DESC LIMIT 3;",
+  out:"+---------+-------+\n| nome    | level |\n+---------+-------+\n| Sylvara |    62 |\n| Kaeldor |    45 |\n| Thorin  |    30 |\n+---------+-------+\n3 rows in set (0.00 sec)",
+  ex:"<b>ORDER BY</b> ordena (<code>DESC</code> = do maior para o menor) e <b>LIMIT</b> corta. Juntos: o ranking do jogo em uma linha."}
+];
+const IE = [
+ {l:"🔟 UPDATE", sql:"SELECT * FROM personagem WHERE nome = 'Kaeldor';   -- 1) confira\nUPDATE personagem SET level = 46 WHERE nome = 'Kaeldor';",
+  out:"1 row in set (0.00 sec)\n\nQuery OK, 1 row affected (0.01 sec)\nRows matched: 1  Changed: 1  Warnings: 0",
+  ex:"O ritual: <b>SELECT com o mesmo WHERE antes</b>. As linhas que aparecem são exatamente as que vão mudar. Dá para somar no valor atual: <code>SET experiencia = experiencia + 500</code>."},
+ {l:"1️⃣1️⃣ UPDATE sem WHERE", sql:"UPDATE personagem SET level = 1;",
+  out:"[e]ERROR 1175 (HY000): You are using safe update mode and you tried to update a table without a WHERE that uses a KEY column.[/e]",
+  ex:"Sem WHERE, o UPDATE muda a <b>tabela inteira</b> e não pergunta nada. O <b>Safe Updates</b> do Workbench barra com o erro <b>1175</b>.",
+  w:"Desligar o Safe Updates é tirar o cinto de segurança. Com ele desligado, esse comando zera o level de todos."},
+ {l:"1️⃣2️⃣ DELETE", sql:"SELECT * FROM jogador WHERE nome = 'Carla Souza';  -- 1) confira\nDELETE FROM jogador WHERE nome = 'Carla Souza';",
+  out:"1 row in set (0.00 sec)\n\nQuery OK, 1 row affected (0.01 sec)",
+  ex:"Mesmo ritual do UPDATE. O DELETE tira <b>linhas</b>: a tabela, as colunas e as travas continuam lá."},
+ {l:"1️⃣3️⃣ A FK protege o pai", sql:"DELETE FROM jogador WHERE id_jogador = 1;",
+  out:"[e]ERROR 1451 (23000): Cannot delete or update a parent row: a foreign key constraint fails (`aetheria_online`.`personagem`)[/e]",
+  ex:"O Rafael tem personagem; apagá-lo deixaria a filha órfã. Ordem certa: <b>guerreiro → personagem → jogador</b>.",
+  w:"Na aula 7 a FK barrou o CREATE fora de ordem. Hoje barra o INSERT (1452) e o DELETE (1451)."},
+ {l:"1️⃣4️⃣ DELETE × TRUNCATE × DROP", sql:"DELETE FROM jogador WHERE id_jogador = 5;   -- as linhas filtradas\nTRUNCATE TABLE jogador;                     -- todas as linhas\nDROP TABLE jogador;                         -- a tabela inteira",
+  out:"Query OK, 1 row affected\nQuery OK, 0 rows affected\nQuery OK, 0 rows affected",
+  ex:"Do mais leve para o mais destrutivo. O <b>TRUNCATE</b> ainda zera o AUTO_INCREMENT; o <b>DROP</b> é DDL, não DML.",
+  w:"Em produção, só o DELETE com WHERE é rotina."},
+ {l:"1️⃣5️⃣ ROLLBACK", sql:"START TRANSACTION;\nUPDATE personagem SET level = 1;    -- errei, esqueci o WHERE\nSELECT nome, level FROM personagem;\nROLLBACK;\nSELECT nome, level FROM personagem;",
+  out:"Query OK, 5 rows affected        <- estrago feito\n| Kaeldor | 1 |  | Sylvara | 1 |  ...\n\nQuery OK (ROLLBACK)\n| Kaeldor | 46 |  | Sylvara | 62 |   <- voltou ao normal",
+  ex:"<b>START TRANSACTION</b> abre uma rede de segurança. <b>ROLLBACK</b> desfaz tudo; <b>COMMIT</b> grava de vez (depois dele não tem volta)."}
+];
+const con=document.getElementById('console'), exp=document.getElementById('explain');
+let timer=null;
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function fmt(o){return esc(o).replace(/\[e\]([\s\S]*?)\[\/e\]/g,'<span class="e">$1</span>');}
+function show(item, btn){
+  document.querySelectorAll('button.active').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); clearInterval(timer);
+  const sql=item.sql; let i=0; con.innerHTML='';
+  exp.innerHTML=item.ex+(item.w?'<div class="warn">⚠ '+item.w+'</div>':'');
+  timer=setInterval(()=>{
+    i+=3; const typed=esc(sql.slice(0,i));
+    con.innerHTML='<span class="cmd">mysql&gt; '+typed.replace(/\n/g,'\n    ')+'</span><span class="blink">▌</span>';
+    if(i>=sql.length){clearInterval(timer);
+      con.innerHTML='<span class="cmd">mysql&gt; '+esc(sql).replace(/\n/g,'\n    ')+'</span>'+(item.out?'\n\n'+fmt(item.out):'');}
+  },18);
+}
+function build(list,id){const box=document.getElementById(id);
+  list.forEach(it=>{const b=document.createElement('button');b.textContent=it.l;b.onclick=()=>show(it,b);box.appendChild(b);});}
+build(DCL,'btns-dcl'); build(IE,'btns-ie');
+document.getElementById('reset').onclick=()=>{clearInterval(timer);
+  document.querySelectorAll('button.active').forEach(b=>b.classList.remove('active'));
+  con.innerHTML='<span class="c">-- Clique em um conceito acima --</span><span class="blink">▌</span>';
+  exp.textContent='Selecione um botão para ver a explicação aqui.';};
+</script>
+</body>
+</html>

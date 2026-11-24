@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+    <html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Demonstração — Subconsultas e Transações — Aetheria Online</title>
+    <style>
+  :root{--bg:#1e1e1e;--panel:#252526;--accent:#c1272d;--text:#e8e8e8;--console-bg:#0c0c0c;--ok:#3ff23f;--err:#ff6b6b;--btn:#3a3a3a;}
+  *{box-sizing:border-box;}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:24px;}
+  h1{font-size:20px;border-left:6px solid var(--accent);padding-left:12px;margin-bottom:4px;}
+  .subtitle{color:#aaa;margin:0 0 16px 12px;font-size:13px;}
+  .group{font-size:11px;letter-spacing:.08em;color:#888;margin:14px 0 6px;text-transform:uppercase;}
+  .buttons{display:flex;flex-wrap:wrap;gap:8px;}
+  button{background:var(--btn);color:var(--text);border:1px solid #555;border-radius:6px;padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;transition:.15s;}
+  button:hover{background:#4a4a4a;}
+  button.active{background:var(--accent);border-color:var(--accent);}
+  #reset{background:#333;border-color:var(--accent);color:#ff8d92;}
+  #reset:hover{background:var(--accent);color:#fff;}
+  .layout{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:16px;}
+  @media(max-width:850px){.layout{grid-template-columns:1fr;}}
+  .panel{background:var(--panel);border-radius:8px;padding:16px;border:1px solid #333;}
+  .panel h2{font-size:14px;margin-top:0;color:#f0a0a0;}
+  pre.console{background:var(--console-bg);color:var(--ok);padding:14px;border-radius:6px;font-family:Consolas,'Courier New',monospace;font-size:13px;line-height:1.5;min-height:300px;white-space:pre-wrap;word-break:break-word;margin:0;}
+  .cmd{color:#fff;} .e{color:var(--err);} .c{color:#888;}
+  .explain{font-size:14px;line-height:1.65;color:#ddd;} .explain b{color:#f0a0a0;}
+  .explain code{background:#111;padding:1px 5px;border-radius:3px;color:#ffd479;}
+  .warn{margin-top:10px;padding:8px 10px;border-left:4px solid var(--accent);background:#2e2020;border-radius:4px;font-size:13px;}
+  .blink{animation:blink 1s step-end infinite;} @keyframes blink{50%{opacity:0;}}
+  footer{margin-top:24px;font-size:11px;color:#777;text-align:center;}
+</style>
+    </head><body>
+    <h1>🧅 Subconsultas e Transações</h1>
+    <p class="subtitle">Um botão por conceito. Clique e veja o comando, o resultado e a explicação. (Resultados reais do banco aetheria_online com os dados do 00b.)</p>
+    <div id="groups"></div>
+    <div style="margin-top:12px"><button id="reset">↺ Limpar console</button></div>
+    <div class="layout">
+      <div class="panel"><h2>💻 Console MySQL</h2>
+        <pre class="console" id="console"><span class="c">-- Clique em um conceito acima --</span><span class="blink">▌</span></pre></div>
+      <div class="panel"><h2>💡 O que está acontecendo</h2>
+        <div class="explain" id="explain">Selecione um botão para ver a explicação aqui.</div></div>
+    </div>
+    <footer>SENAI Ítalo Bologna · Banco de Dados · Aula 12 · Aetheria Online · banco aetheria_online</footer>
+    <script>
+    const G=[["Subconsultas", [{"l": "1️⃣ Escalar", "sql": "SELECT nome, level\nFROM personagem\nWHERE level > (SELECT AVG(level) FROM personagem);", "out": "+---------+-------+\n| nome    | level |\n+---------+-------+\n| Kaeldor |    45 |\n| Sylvara |    62 |\n| Morgana |    55 |\n| Ragnar  |    38 |\n| Elowen  |    41 |\n| Nyx     |    50 |\n+---------+-------+", "err": false, "ex": "O SELECT de dentro calcula a média (35.33) e entrega <b>um valor</b> para o de fora. Nada de copiar número na mão."}, {"l": "📋 IN", "sql": "SELECT nome\nFROM personagem\nWHERE id_personagem IN (SELECT id_personagem FROM progresso\n                        WHERE id_missao = 2 AND data_conclusao IS NOT NULL);", "out": "+---------+\n| nome    |\n+---------+\n| Kaeldor |\n| Sylvara |\n| Nyx     |\n+---------+", "err": false, "ex": "A subconsulta devolve uma <b>lista</b> de ids. Lista pede <b>IN</b>."}, {"l": "🔴 Erro 1242", "sql": "SELECT nome FROM personagem\nWHERE id_personagem = (SELECT id_personagem FROM progresso);", "out": "--------------\nSELECT nome FROM personagem\nWHERE id_personagem = (SELECT id_personagem FROM progresso)\n--------------\n\nERROR 1242 (21000) at line 1: Subquery returns more than 1 row", "err": true, "ex": "Usou <code>=</code> com uma lista. Troque por <b>IN</b>."}, {"l": "🚫 NOT IN", "sql": "SELECT nome FROM jogador\nWHERE id_jogador NOT IN (SELECT id_jogador FROM personagem);", "out": "+----------------+\n| nome           |\n+----------------+\n| Gabriela Alves |\n+----------------+", "err": false, "ex": "Quem <b>não</b> aparece na lista: jogador sem personagem."}, {"l": "⚠ Armadilha do NULL", "sql": "SELECT nome FROM guilda\nWHERE id_guilda NOT IN (SELECT id_guilda FROM personagem);", "out": "Empty set (0.00 sec)", "err": false, "ex": "<b>Vazio, sem erro!</b> A lista tem NULL (personagens sem guilda) e <code>x NOT IN (1, 2, NULL)</code> nunca é verdadeiro."}, {"l": "✅ NULL corrigido", "sql": "SELECT nome FROM guilda\nWHERE id_guilda NOT IN (SELECT id_guilda FROM personagem\n                        WHERE id_guilda IS NOT NULL);", "out": "+-----------------+\n| nome            |\n+-----------------+\n| Clã dos Ventos  |\n+-----------------+", "err": false, "ex": "Tirando o NULL da lista, o Clã dos Ventos aparece."}, {"l": "⬆ > ALL", "sql": "SELECT nome, level FROM personagem\nWHERE level > ALL (SELECT p.level FROM personagem p\n  INNER JOIN guerreiro g ON p.id_personagem = g.id_personagem);", "out": "+---------+-------+\n| nome    | level |\n+---------+-------+\n| Sylvara |    62 |\n| Morgana |    55 |\n| Nyx     |    50 |\n+---------+-------+", "err": false, "ex": "Maior que <b>todos</b> os guerreiros (maior que 45)."}, {"l": "🔍 NOT EXISTS", "sql": "SELECT g.nome FROM guilda g\nWHERE NOT EXISTS (SELECT 1 FROM personagem p\n                  WHERE p.id_guilda = g.id_guilda);", "out": "+-----------------+\n| nome            |\n+-----------------+\n| Clã dos Ventos  |\n+-----------------+", "err": false, "ex": "Existe alguma linha relacionada? Roda uma vez por guilda. Aqui o NULL não atrapalha."}]], ["Transações (TCL)", [{"l": "↩ ROLLBACK", "sql": "START TRANSACTION;\nUPDATE personagem SET level = 1 WHERE id_personagem = 1;\nSELECT nome, level FROM personagem WHERE id_personagem = 1;\nROLLBACK;\nSELECT nome, level FROM personagem WHERE id_personagem = 1;", "out": "+---------+-------+\n| nome    | level |\n+---------+-------+\n| Kaeldor |     1 |\n+---------+-------+\n+---------+-------+\n| nome    | level |\n+---------+-------+\n| Kaeldor |    45 |\n+---------+-------+", "err": false, "ex": "No rascunho o Kaeldor virou level 1. O <b>ROLLBACK</b> jogou o rascunho fora: 45 de novo."}, {"l": "🎮 SAVEPOINT", "sql": "START TRANSACTION;\nUPDATE personagem SET vida = 100 WHERE id_personagem = 9;\nSAVEPOINT depois_da_cura;\nUPDATE personagem SET level = 99 WHERE id_personagem = 9;\nROLLBACK TO SAVEPOINT depois_da_cura;\nSELECT nome, level, vida FROM personagem WHERE id_personagem = 9;\nROLLBACK;", "out": "+--------+-------+------+\n| nome   | level | vida |\n+--------+-------+------+\n| Dravik |     8 |  100 |\n+--------+-------+------+", "err": false, "ex": "Volta <b>só até a marca</b>: a cura (vida 100) ficou, o level 99 sumiu. Como um checkpoint. (Aqui terminamos com ROLLBACK para a demo não mudar o banco.)"}]]];
+    const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const con=document.getElementById('console'),exp=document.getElementById('explain'),gdiv=document.getElementById('groups');
+    G.forEach(([g,items])=>{
+      const t=document.createElement('div');t.className='group';t.textContent=g;gdiv.appendChild(t);
+      const b=document.createElement('div');b.className='buttons';gdiv.appendChild(b);
+      items.forEach(it=>{const bt=document.createElement('button');bt.textContent=it.l;b.appendChild(bt);
+        bt.onclick=()=>{document.querySelectorAll('#groups button').forEach(x=>x.classList.remove('active'));bt.classList.add('active');
+          con.innerHTML='<span class="cmd">mysql&gt; '+esc(it.sql).replace(/\n/g,'\n    -&gt; ')+'</span>\n\n'+(it.err?'<span class="e">'+esc(it.out)+'</span>':esc(it.out))+'\n\n<span class="blink">▌</span>';
+          exp.innerHTML=it.ex;};});
+    });
+    document.getElementById('reset').onclick=()=>{con.innerHTML='<span class="c">-- Clique em um conceito acima --</span><span class="blink">▌</span>';exp.textContent='Selecione um botão para ver a explicação aqui.';document.querySelectorAll('#groups button').forEach(x=>x.classList.remove('active'));};
+    </script></body></html>

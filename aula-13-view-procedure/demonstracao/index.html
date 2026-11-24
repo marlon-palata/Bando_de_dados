@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+    <html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Demonstração — VIEW e Procedure — Aetheria Online</title>
+    <style>
+  :root{--bg:#1e1e1e;--panel:#252526;--accent:#c1272d;--text:#e8e8e8;--console-bg:#0c0c0c;--ok:#3ff23f;--err:#ff6b6b;--btn:#3a3a3a;}
+  *{box-sizing:border-box;}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:24px;}
+  h1{font-size:20px;border-left:6px solid var(--accent);padding-left:12px;margin-bottom:4px;}
+  .subtitle{color:#aaa;margin:0 0 16px 12px;font-size:13px;}
+  .group{font-size:11px;letter-spacing:.08em;color:#888;margin:14px 0 6px;text-transform:uppercase;}
+  .buttons{display:flex;flex-wrap:wrap;gap:8px;}
+  button{background:var(--btn);color:var(--text);border:1px solid #555;border-radius:6px;padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;transition:.15s;}
+  button:hover{background:#4a4a4a;}
+  button.active{background:var(--accent);border-color:var(--accent);}
+  #reset{background:#333;border-color:var(--accent);color:#ff8d92;}
+  #reset:hover{background:var(--accent);color:#fff;}
+  .layout{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:16px;}
+  @media(max-width:850px){.layout{grid-template-columns:1fr;}}
+  .panel{background:var(--panel);border-radius:8px;padding:16px;border:1px solid #333;}
+  .panel h2{font-size:14px;margin-top:0;color:#f0a0a0;}
+  pre.console{background:var(--console-bg);color:var(--ok);padding:14px;border-radius:6px;font-family:Consolas,'Courier New',monospace;font-size:13px;line-height:1.5;min-height:300px;white-space:pre-wrap;word-break:break-word;margin:0;}
+  .cmd{color:#fff;} .e{color:var(--err);} .c{color:#888;}
+  .explain{font-size:14px;line-height:1.65;color:#ddd;} .explain b{color:#f0a0a0;}
+  .explain code{background:#111;padding:1px 5px;border-radius:3px;color:#ffd479;}
+  .warn{margin-top:10px;padding:8px 10px;border-left:4px solid var(--accent);background:#2e2020;border-radius:4px;font-size:13px;}
+  .blink{animation:blink 1s step-end infinite;} @keyframes blink{50%{opacity:0;}}
+  footer{margin-top:24px;font-size:11px;color:#777;text-align:center;}
+</style>
+    </head><body>
+    <h1>🗂 VIEW e Stored Procedure</h1>
+    <p class="subtitle">Um botão por conceito. Clique e veja o comando, o resultado e a explicação. (Resultados reais do banco aetheria_online com os dados do 00b.)</p>
+    <div id="groups"></div>
+    <div style="margin-top:12px"><button id="reset">↺ Limpar console</button></div>
+    <div class="layout">
+      <div class="panel"><h2>💻 Console MySQL</h2>
+        <pre class="console" id="console"><span class="c">-- Clique em um conceito acima --</span><span class="blink">▌</span></pre></div>
+      <div class="panel"><h2>💡 O que está acontecendo</h2>
+        <div class="explain" id="explain">Selecione um botão para ver a explicação aqui.</div></div>
+    </div>
+    <footer>SENAI Ítalo Bologna · Banco de Dados · Aula 13 · Aetheria Online · banco aetheria_online</footer>
+    <script>
+    const G=[["VIEW", [{"l": "👁 Criar VIEW", "sql": "CREATE OR REPLACE VIEW vw_ranking AS\nSELECT p.nome AS personagem, p.level, j.nome AS jogador, g.nome AS guilda\nFROM personagem p\nINNER JOIN jogador j ON p.id_jogador = j.id_jogador\nLEFT JOIN guilda g ON p.id_guilda = g.id_guilda;\nSELECT * FROM vw_ranking ORDER BY level DESC LIMIT 5;", "out": "+------------+-------+---------------+------------------+\n| personagem | level | jogador       | guilda           |\n+------------+-------+---------------+------------------+\n| Sylvara    |    62 | Ayla Costa    | Ordem Arcana     |\n| Morgana    |    55 | Carla Souza   | Ordem Arcana     |\n| Nyx        |    50 | Elisa Rocha   | Sombras do Norte |\n| Kaeldor    |    45 | Rafael Silva  | Legião de Ferro  |\n| Elowen     |    41 | Diego Martins | Sombras do Norte |\n+------------+-------+---------------+------------------+", "err": false, "ex": "A consulta grande ganhou um <b>nome</b>. Agora qualquer sistema usa <code>SELECT * FROM vw_ranking</code>."}, {"l": "🔎 VIEW com WHERE", "sql": "SELECT personagem, level FROM vw_ranking\nWHERE guilda = 'Ordem Arcana';", "out": "+------------+-------+\n| personagem | level |\n+------------+-------+\n| Sylvara    |    62 |\n| Morgana    |    55 |\n| Aldric     |    27 |\n+------------+-------+", "err": false, "ex": "Usa-se <b>como se fosse tabela</b>: WHERE, ORDER BY, LIMIT..."}, {"l": "📊 VIEW de relatório", "sql": "SELECT * FROM vw_resumo_guildas ORDER BY membros DESC;", "out": "+------------------+------------+---------+-------------+\n| guilda           | cidade     | membros | media_level |\n+------------------+------------+---------+-------------+\n| Legião de Ferro  | Valdoria   |       4 |        36.5 |\n| Ordem Arcana     | Eldmoor    |       3 |        48.0 |\n| Sombras do Norte | NULL       |       2 |        45.5 |\n| Clã dos Ventos   | Portoclaro |       0 |        NULL |\n+------------------+------------+---------+-------------+", "err": false, "ex": "JOIN + GROUP BY guardados numa view: o relatório virou uma linha."}, {"l": "📋 Listar views", "sql": "SHOW FULL TABLES WHERE Table_type = 'VIEW';", "out": "+---------------------------+------------+\n| Tables_in_aetheria_online | Table_type |\n+---------------------------+------------+\n| vw_inventario             | VIEW       |\n| vw_jogadores_premium      | VIEW       |\n| vw_ranking                | VIEW       |\n| vw_resumo_guildas         | VIEW       |\n+---------------------------+------------+", "err": false, "ex": "As views aparecem junto das tabelas, com o tipo <b>VIEW</b>."}, {"l": "🔴 Erro 1050", "sql": "CREATE VIEW vw_ranking AS SELECT nome FROM personagem;", "out": "--------------\nCREATE VIEW vw_ranking AS SELECT nome FROM personagem\n--------------\n\nERROR 1050 (42S01) at line 1: Table 'vw_ranking' already exists", "err": true, "ex": "Já existe. Para trocar a definição use <b>CREATE OR REPLACE VIEW</b>."}]], ["STORED PROCEDURE", [{"l": "⚙ CALL simples", "sql": "CALL sp_listar_missoes();", "out": "+---------------------+-----------------+\n| nome                | recompensa_base |\n+---------------------+-----------------+\n| Tesouro perdido     |         2000.00 |\n| Caçada ao dragão    |         1500.00 |\n| Defesa do castelo   |          850.00 |\n| Ruínas de Eldmoor   |          400.00 |\n| Patrulha da vila    |           50.00 |\n| Entrega de poções   |           25.50 |\n+---------------------+-----------------+", "err": false, "ex": "Criada com <code>DELIMITER $$ CREATE PROCEDURE sp_listar_missoes() BEGIN SELECT ... END $$ DELIMITER ;</code>. Executa com <b>CALL</b>."}, {"l": "➡ Parâmetro IN", "sql": "CALL sp_membros_da_guilda(1);", "out": "+---------+-------+\n| nome    | level |\n+---------+-------+\n| Kaeldor |    45 |\n| Ragnar  |    38 |\n| Brienne |    33 |\n| Thorin  |    30 |\n+---------+-------+", "err": false, "ex": "<code>sp_membros_da_guilda(IN p_id_guilda INT)</code>: uma procedure para <b>qualquer</b> guilda."}, {"l": "⬅ Parâmetro OUT", "sql": "CALL sp_contar_membros(1, @total);\nSELECT @total AS membros_da_legiao;", "out": "+-------------------+\n| membros_da_legiao |\n+-------------------+\n|                 4 |\n+-------------------+", "err": false, "ex": "<code>SELECT COUNT(*) INTO p_total</code> devolve o valor na variável <b>@total</b>."}, {"l": "🚦 IF (inválido)", "sql": "CALL sp_subir_level(9, -5);", "out": "+---------------------------------------------------------+\n| aviso                                                   |\n+---------------------------------------------------------+\n| Quantidade invÃ¡lida: use um nÃºmero maior que zero     |\n+---------------------------------------------------------+", "err": false, "ex": "A regra mora no banco: quantidade negativa recebe <b>aviso</b> e nada muda."}, {"l": "🔴 Erro 1318", "sql": "CALL sp_membros_da_guilda();", "out": "--------------\nCALL sp_membros_da_guilda()\n--------------\n\nERROR 1318 (42000) at line 1: Incorrect number of arguments for PROCEDURE aetheria_online.sp_membros_da_guilda; expected 1, got 0", "err": true, "ex": "Faltou o parâmetro: <b>número errado de argumentos</b>."}, {"l": "📋 Listar procedures", "sql": "SELECT ROUTINE_NAME AS procedure_name FROM information_schema.ROUTINES\nWHERE ROUTINE_SCHEMA = 'aetheria_online' AND ROUTINE_TYPE = 'PROCEDURE';", "out": "+------------------------+\n| procedure_name         |\n+------------------------+\n| sp_buscar_jogador      |\n| sp_cadastrar_item      |\n| sp_cadastrar_jogador   |\n| sp_contar_membros      |\n| sp_curar               |\n| sp_dano                |\n| sp_entrar_na_guilda    |\n| sp_itens_do_personagem |\n| sp_listar_itens        |\n| sp_listar_missoes      |\n| sp_membros_da_guilda   |\n| sp_ouro_do_personagem  |\n| sp_subir_level         |\n| sp_trocar_item         |\n+------------------------+", "err": false, "ex": "No Workbench: SCHEMAS → aetheria_online → <b>Stored Procedures</b>. No SQL: <code>SHOW PROCEDURE STATUS WHERE Db = 'aetheria_online';</code>"}]]];
+    const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const con=document.getElementById('console'),exp=document.getElementById('explain'),gdiv=document.getElementById('groups');
+    G.forEach(([g,items])=>{
+      const t=document.createElement('div');t.className='group';t.textContent=g;gdiv.appendChild(t);
+      const b=document.createElement('div');b.className='buttons';gdiv.appendChild(b);
+      items.forEach(it=>{const bt=document.createElement('button');bt.textContent=it.l;b.appendChild(bt);
+        bt.onclick=()=>{document.querySelectorAll('#groups button').forEach(x=>x.classList.remove('active'));bt.classList.add('active');
+          con.innerHTML='<span class="cmd">mysql&gt; '+esc(it.sql).replace(/\n/g,'\n    -&gt; ')+'</span>\n\n'+(it.err?'<span class="e">'+esc(it.out)+'</span>':esc(it.out))+'\n\n<span class="blink">▌</span>';
+          exp.innerHTML=it.ex;};});
+    });
+    document.getElementById('reset').onclick=()=>{con.innerHTML='<span class="c">-- Clique em um conceito acima --</span><span class="blink">▌</span>';exp.textContent='Selecione um botão para ver a explicação aqui.';document.querySelectorAll('#groups button').forEach(x=>x.classList.remove('active'));};
+    </script></body></html>

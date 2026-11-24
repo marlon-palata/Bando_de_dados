@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+    <html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Demonstração — Function, Trigger e Event — Aetheria Online</title>
+    <style>
+  :root{--bg:#1e1e1e;--panel:#252526;--accent:#c1272d;--text:#e8e8e8;--console-bg:#0c0c0c;--ok:#3ff23f;--err:#ff6b6b;--btn:#3a3a3a;}
+  *{box-sizing:border-box;}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:24px;}
+  h1{font-size:20px;border-left:6px solid var(--accent);padding-left:12px;margin-bottom:4px;}
+  .subtitle{color:#aaa;margin:0 0 16px 12px;font-size:13px;}
+  .group{font-size:11px;letter-spacing:.08em;color:#888;margin:14px 0 6px;text-transform:uppercase;}
+  .buttons{display:flex;flex-wrap:wrap;gap:8px;}
+  button{background:var(--btn);color:var(--text);border:1px solid #555;border-radius:6px;padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;transition:.15s;}
+  button:hover{background:#4a4a4a;}
+  button.active{background:var(--accent);border-color:var(--accent);}
+  #reset{background:#333;border-color:var(--accent);color:#ff8d92;}
+  #reset:hover{background:var(--accent);color:#fff;}
+  .layout{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:16px;}
+  @media(max-width:850px){.layout{grid-template-columns:1fr;}}
+  .panel{background:var(--panel);border-radius:8px;padding:16px;border:1px solid #333;}
+  .panel h2{font-size:14px;margin-top:0;color:#f0a0a0;}
+  pre.console{background:var(--console-bg);color:var(--ok);padding:14px;border-radius:6px;font-family:Consolas,'Courier New',monospace;font-size:13px;line-height:1.5;min-height:300px;white-space:pre-wrap;word-break:break-word;margin:0;}
+  .cmd{color:#fff;} .e{color:var(--err);} .c{color:#888;}
+  .explain{font-size:14px;line-height:1.65;color:#ddd;} .explain b{color:#f0a0a0;}
+  .explain code{background:#111;padding:1px 5px;border-radius:3px;color:#ffd479;}
+  .warn{margin-top:10px;padding:8px 10px;border-left:4px solid var(--accent);background:#2e2020;border-radius:4px;font-size:13px;}
+  .blink{animation:blink 1s step-end infinite;} @keyframes blink{50%{opacity:0;}}
+  footer{margin-top:24px;font-size:11px;color:#777;text-align:center;}
+</style>
+    </head><body>
+    <h1>⚡ Function, Trigger e Event</h1>
+    <p class="subtitle">Um botão por conceito. Clique e veja o comando, o resultado e a explicação. (Resultados reais do banco aetheria_online com os dados do 00b.)</p>
+    <div id="groups"></div>
+    <div style="margin-top:12px"><button id="reset">↺ Limpar console</button></div>
+    <div class="layout">
+      <div class="panel"><h2>💻 Console MySQL</h2>
+        <pre class="console" id="console"><span class="c">-- Clique em um conceito acima --</span><span class="blink">▌</span></pre></div>
+      <div class="panel"><h2>💡 O que está acontecendo</h2>
+        <div class="explain" id="explain">Selecione um botão para ver a explicação aqui.</div></div>
+    </div>
+    <footer>SENAI Ítalo Bologna · Banco de Dados · Aula 14 · Aetheria Online · banco aetheria_online</footer>
+    <script>
+    const G=[["FUNCTION", [{"l": "🧮 fn_classe", "sql": "SELECT nome, level, fn_classe(level) AS classe\nFROM personagem;", "out": "+----------+-------+-------------+\n| nome     | level | classe      |\n+----------+-------+-------------+\n| Kaeldor  |    45 | Veterano    |\n| Sylvara  |    62 | Lenda       |\n| Zephyros |    23 | Aventureiro |\n| Thorin   |    30 | Aventureiro |\n| Lyria    |    12 | Iniciante   |\n| Morgana  |    55 | Veterano    |\n| Ragnar   |    38 | Aventureiro |\n| Elowen   |    41 | Veterano    |\n| Dravik   |     8 | Iniciante   |\n| Nyx      |    50 | Veterano    |\n| Aldric   |    27 | Aventureiro |\n| Brienne  |    33 | Aventureiro |\n+----------+-------+-------------+", "err": false, "ex": "Function criada por nós: recebe o level e devolve a <b>classe</b>. Usa-se dentro do SELECT, igual a UPPER ou ROUND."}, {"l": "📊 Function no GROUP BY", "sql": "SELECT fn_classe(level) AS classe, COUNT(*) AS quantos\nFROM personagem\nGROUP BY fn_classe(level);", "out": "+-------------+---------+\n| classe      | quantos |\n+-------------+---------+\n| Aventureiro |       5 |\n| Iniciante   |       2 |\n| Lenda       |       1 |\n| Veterano    |       4 |\n+-------------+---------+", "err": false, "ex": "A regra das classes mora <b>num lugar só</b> e serve para qualquer consulta."}, {"l": "💰 Function que lê tabela", "sql": "SELECT nome, fn_ouro_total(id_personagem) AS ouro\nFROM personagem;", "out": "+----------+---------+\n| nome     | ouro    |\n+----------+---------+\n| Kaeldor  | 1550.00 |\n| Sylvara  | 1900.00 |\n| Zephyros |   75.50 |\n| Thorin   |  850.00 |\n| Lyria    |    NULL |\n| Morgana  |  400.00 |\n| Ragnar   |  900.00 |\n| Elowen   |   25.50 |\n| Dravik   |    NULL |\n| Nyx      | 1900.00 |\n| Aldric   |   50.00 |\n| Brienne  |    NULL |\n+----------+---------+", "err": false, "ex": "<code>READS SQL DATA</code> + <code>DECLARE v_total</code> + <code>SELECT ... INTO</code>. Quem nunca fez missão: NULL."}]], ["TRIGGER", [{"l": "📜 Histórico automático", "sql": "START TRANSACTION;\nUPDATE personagem SET level = 46 WHERE id_personagem = 1;\nSELECT * FROM historico_level;\nROLLBACK;", "out": "+--------------+---------------+--------------+------------+---------------------+\n| id_historico | id_personagem | level_antigo | level_novo | data_mudanca        |\n+--------------+---------------+--------------+------------+---------------------+\n|            1 |             1 |           45 |         46 | 2026-11-24 09:32:50 |\n+--------------+---------------+--------------+------------+---------------------+", "err": false, "ex": "O <b>AFTER UPDATE</b> gravou o histórico sozinho (OLD.level 45 → NEW.level 46). Ninguém escreveu esse INSERT. (Terminamos com ROLLBACK para a demo não mudar o banco.)"}, {"l": "✉ BEFORE INSERT", "sql": "START TRANSACTION;\nINSERT INTO jogador (nome, email) VALUES ('Ivo Ramos', '  IVO@PixelForge.COM ');\nSELECT nome, email FROM jogador WHERE nome = 'Ivo Ramos';\nROLLBACK;", "out": "+-----------+--------------------+\n| nome      | email              |\n+-----------+--------------------+\n| Ivo Ramos | ivo@pixelforge.com |\n+-----------+--------------------+", "err": false, "ex": "No <b>BEFORE</b> o trigger mexeu no <code>NEW.email</code> antes de gravar: minúsculo e sem espaços."}, {"l": "❤ Vida máxima", "sql": "START TRANSACTION;\nUPDATE personagem SET vida = 250 WHERE id_personagem = 9;\nSELECT nome, vida FROM personagem WHERE id_personagem = 9;\nROLLBACK;", "out": "+--------+------+\n| nome   | vida |\n+--------+------+\n| Dravik |  100 |\n+--------+------+", "err": false, "ex": "<b>BEFORE UPDATE</b>: tentaram dar 250, o trigger corrigiu para 100."}, {"l": "🔴 SIGNAL (1644)", "sql": "INSERT INTO troca (id_personagem_propoe, id_personagem_recebe)\nVALUES (3, 3);", "out": "--------------\nINSERT INTO troca (id_personagem_propoe, id_personagem_recebe)\nVALUES (3, 3)\n--------------\n\nERROR 1644 (45000) at line 1: Um personagem não pode trocar com ele mesmo", "err": true, "ex": "<code>SIGNAL SQLSTATE '45000'</code> cancela o INSERT com a <b>nossa</b> mensagem."}]], ["EVENT", [{"l": "⏰ Agenda ligada?", "sql": "SHOW VARIABLES LIKE 'event_scheduler';", "out": "+-----------------+-------+\n| Variable_name   | Value |\n+-----------------+-------+\n| event_scheduler | ON    |\n+-----------------+-------+", "err": false, "ex": "Tem que estar <b>ON</b>. Exemplo: <code>CREATE EVENT ev_regenerar_vida ON SCHEDULE EVERY 1 MINUTE DO UPDATE personagem SET vida = vida + 10 WHERE vida &lt;= 90;</code> — e no fim da aula, <b>DROP EVENT</b>."}]]];
+    const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const con=document.getElementById('console'),exp=document.getElementById('explain'),gdiv=document.getElementById('groups');
+    G.forEach(([g,items])=>{
+      const t=document.createElement('div');t.className='group';t.textContent=g;gdiv.appendChild(t);
+      const b=document.createElement('div');b.className='buttons';gdiv.appendChild(b);
+      items.forEach(it=>{const bt=document.createElement('button');bt.textContent=it.l;b.appendChild(bt);
+        bt.onclick=()=>{document.querySelectorAll('#groups button').forEach(x=>x.classList.remove('active'));bt.classList.add('active');
+          con.innerHTML='<span class="cmd">mysql&gt; '+esc(it.sql).replace(/\n/g,'\n    -&gt; ')+'</span>\n\n'+(it.err?'<span class="e">'+esc(it.out)+'</span>':esc(it.out))+'\n\n<span class="blink">▌</span>';
+          exp.innerHTML=it.ex;};});
+    });
+    document.getElementById('reset').onclick=()=>{con.innerHTML='<span class="c">-- Clique em um conceito acima --</span><span class="blink">▌</span>';exp.textContent='Selecione um botão para ver a explicação aqui.';document.querySelectorAll('#groups button').forEach(x=>x.classList.remove('active'));};
+    </script></body></html>
